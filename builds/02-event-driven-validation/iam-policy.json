@@ -1,0 +1,26 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadRaw",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::dea-lake-ACCOUNT_ID/raw/*"
+    },
+    {
+      "Sid": "WriteCleanAndQuarantine",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": [
+        "arn:aws:s3:::dea-lake-ACCOUNT_ID/clean/*",
+        "arn:aws:s3:::dea-lake-ACCOUNT_ID/quarantine/*"
+      ]
+    },
+    {
+      "Sid": "SendFailuresToDLQ",
+      "Effect": "Allow",
+      "Action": "sqs:SendMessage",
+      "Resource": "arn:aws:sqs:us-east-1:ACCOUNT_ID:dea-ingest-dlq"
+    }
+  ]
+}
