@@ -1,0 +1,2 @@
+{ "rules": [ { "rule-type": "selection", "rule-id": "1", "rule-name": "zones",
+    "object-locator": { "schema-name": "dea", "table-name": "zones" }, "rule-action": "include" } ] }
