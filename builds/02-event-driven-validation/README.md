@@ -39,8 +39,8 @@ flowchart LR
 ## What broke (on purpose)
 
 - **Bad file:** dropped the `fare_amount` column. It was routed to `quarantine/` with the missing column logged.
-- **Starved memory:** cut memory to 128 MB. The function timed out three times (first try plus 2 retries,
-  about 1 and 2 minutes apart, same request ID). The event landed in SQS with `RetriesExhausted`,
+- **Starved memory:** cut memory to 128 MB. The function failed three times (first try plus 2 retries,
+  about 1 and 2 minutes apart, same request ID). The event landed in SQS with `RetriesExhausted` and `Runtime.OutOfMemory`,
   and the alarm emailed. At 1024 MB the same file takes 0.6 seconds.
 
 ![Failed event in SQS](screenshots/b2-06-failed-event.png)
