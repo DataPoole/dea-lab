@@ -3,7 +3,7 @@
 A serverless data pipeline on AWS that ingests, validates, catalogs and serves NYC taxi trip data.
 Built hands-on, one layer at a time, while preparing for the AWS Certified Data Engineer – Associate (DEA-C01) exam.
 
-**Status:** in progress · 3 of 16 builds complete · Region `us-east-1`
+**Status:** in progress · 4 of 16 builds complete · Region `us-east-1`
 
 ## Architecture
 
@@ -18,6 +18,10 @@ flowchart LR
   C --> K[Glue crawler] --> G[Glue Data Catalog]
   G --> AT[Athena workgroups]
   AT -->|CTAS| P[(S3 curated/ Parquet)]
+  PR[Trip event producer] --> KS[Kinesis Data Streams]
+  KS --> LB[Lambda: real-time alerts]
+  KS --> FH[Firehose: JSON to Parquet] --> RS[(S3 raw/stream/)]
+  RS --> AT
 ```
 
 ## Builds
@@ -27,8 +31,9 @@ flowchart LR
 | 1 | [Data Lake Zones and Tiering](builds/01-data-lake-zones/) | S3 | Zoned, partitioned, versioned lake with lifecycle tiering |
 | 2 | [Event-Driven File Validation](builds/02-event-driven-validation/) | S3, Lambda, SQS, CloudWatch, SNS | Files validated on arrival; failures captured and alerted |
 | 3 | [Schema Catalog and SQL Analytics](builds/03-schema-catalog-sql/) | Glue, Athena | Cataloged lake; Parquet cut data scanned up to 100x; partition projection |
+| 4 | [Real-Time Trip Streaming](builds/04-real-time-streaming/) | Kinesis, Firehose, Lambda | Events queryable as Parquet within a minute; bad records isolated |
 
-**Coming next:** real-time streaming (Kinesis) ·
+**Coming next:**
 database change capture (DMS) · ETL with data quality (Glue) · orchestration (Step Functions) ·
 data warehouse (Redshift Serverless) · pipeline as code (SAM) · governance and PII (Lake Formation).
 
@@ -36,6 +41,7 @@ data warehouse (Redshift Serverless) · pipeline as code (SAM) · governance and
 
 - **Data lake design:** zones, Hive-style partitions, storage tiering based on access patterns
 - **Event-driven pipelines:** S3 notifications, Lambda, async retries, failure destinations
+- **Streaming:** Kinesis Data Streams, Firehose format conversion, stream consumers, poison-record handling
 - **Data quality:** schema and row-count checks with a quarantine path
 - **Security:** least-privilege IAM roles scoped to S3 prefixes; encryption at rest; no access keys
 - **Operations:** CloudWatch alarms, SNS alerts, debugging timeouts and memory starvation
