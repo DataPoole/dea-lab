@@ -1,0 +1,58 @@
+{
+  "Comment": "Enrich new trips, check the newest month, notify",
+  "QueryLanguage": "JSONPath",
+  "StartAt": "RunEnrichJob",
+  "States": {
+    "RunEnrichJob": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": { "JobName": "dea-enrich-trips" },
+      "ResultPath": "$.glue",
+      "Retry": [ { "ErrorEquals": ["States.TaskFailed"], "IntervalSeconds": 30, "MaxAttempts": 1, "BackoffRate": 2 } ],
+      "Catch": [ { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure" } ],
+      "Next": "CountNewestMonth"
+    },
+    "CountNewestMonth": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::athena:startQueryExecution.sync",
+      "Parameters": {
+        "QueryString": "SELECT count(*) FROM trips_enriched WHERE year = 2024 AND month = (SELECT max(month) FROM trips_enriched WHERE year = 2024)",
+        "WorkGroup": "dea-wg",
+        "QueryExecutionContext": { "Database": "dea_db" }
+      },
+      "ResultPath": "$.athena",
+      "Catch": [ { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure" } ],
+      "Next": "GetCount"
+    },
+    "GetCount": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::aws-sdk:athena:getQueryResults",
+      "Parameters": { "QueryExecutionId.$": "$.athena.QueryExecution.QueryExecutionId" },
+      "ResultSelector": { "count.$": "$.ResultSet.Rows[1].Data[0].VarCharValue" },
+      "ResultPath": "$.results",
+      "Catch": [ { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "NotifyFailure" } ],
+      "Next": "NotifySuccess"
+    },
+    "NotifySuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:124118675794:dea-alerts",
+        "Subject": "dea-nightly-pipeline succeeded",
+        "Message.$": "States.Format('Pipeline succeeded. Rows in newest month: {}', $.results.count)"
+      },
+      "End": true
+    },
+    "NotifyFailure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:124118675794:dea-alerts",
+        "Subject": "dea-nightly-pipeline FAILED",
+        "Message.$": "$.error.Cause"
+      },
+      "Next": "PipelineFailed"
+    },
+    "PipelineFailed": { "Type": "Fail", "Error": "PipelineFailed", "Cause": "See the failure email and the execution history." }
+  }
+}

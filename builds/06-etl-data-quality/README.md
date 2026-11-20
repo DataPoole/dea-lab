@@ -46,7 +46,7 @@ flowchart LR
 | Decision | Why |
 |---|---|
 | DQ gate fails the job before writing | Bad or short batches never reach `curated/`; downstream users only see checked data |
-| Job bookmarks | Nightly runs process only new files; no duplicates on rerun |
+| Job bookmarks on trips only | Nightly runs process only new trip files; zones (lookup) is read in full every run |
 | Catalog updated by the job | New partitions are queryable immediately, no crawler run or cost |
 | Parquet partitioned by year/month | Matches the most common filter; Athena reads only the needed months and columns |
 | Iceberg + MERGE for CDC | ACID upserts and deletes on S3; reruns are safe |
@@ -58,9 +58,11 @@ flowchart LR
   The new console won't save without a role and defaults to creating a new broad one; chose **Use existing role**.
 - **Console defaults didn't match the plan:** Glue 6.0, auto scaling on, 480-minute timeout, DQ "Continue with job".
   Set each one explicitly.
-- **The empty rerun failed on schema, not on the DQ rule:** with no new files, a CSV source has no header to read,
-  so the SQL step couldn't find `PULocationID` and failed before the gate. Nothing was written either way.
-  Production fix: read through a **catalog table** with a fixed schema so an empty batch reaches the DQ rule.
+- **The empty rerun failed on schema, not on the DQ rule:** job bookmarks track **every** source with a
+  `transformation_ctx`, including the zones lookup table. On a rerun both sources read nothing, so the SQL
+  step failed before the gate. In Build 7 the same thing broke a real April run (zones empty, trips fine).
+  **Fix:** removed `transformation_ctx` from the zones read so only the trips source is bookmarked
+  (the job is now script-mode). Rule: bookmark the incremental source, never the lookup data.
 
 ## Cost
 

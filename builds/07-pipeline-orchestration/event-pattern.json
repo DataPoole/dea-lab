@@ -1,0 +1,8 @@
+{
+  "source": ["aws.s3"],
+  "detail-type": ["Object Created"],
+  "detail": {
+    "bucket": { "name": ["dea-lake-124118675794"] },
+    "object": { "key": [{ "prefix": "clean/trips/" }] }
+  }
+}

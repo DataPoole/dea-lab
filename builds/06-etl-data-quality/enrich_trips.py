@@ -23,10 +23,10 @@ job.init(args['JOB_NAME'], args)
 trips_csv_node1795178575346 = glueContext.create_dynamic_frame.from_options(format_options={"quoteChar": "\"", "withHeader": True, "separator": ",", "optimizePerformance": False}, connection_type="s3", format="csv", connection_options={"paths": ["s3://dea-lake-124118675794/clean/trips/"], "recurse": True}, transformation_ctx="trips_csv_node1795178575346")
 
 # Script generated for node zones
-zones_node1795178857749 = glueContext.create_dynamic_frame.from_catalog(database="dea_db", table_name="zones_clean", transformation_ctx="zones_node1795178857749")
+zones_node1795178857749 = glueContext.create_dynamic_frame.from_catalog(database="dea_db", table_name="zones_clean")
 
 # Script generated for node enrich
-SqlQuery0 = '''
+SqlQuery123 = '''
 SELECT
   CAST(t.VendorID AS int) AS vendor_id,
   to_timestamp(t.tpep_pickup_datetime) AS pickup_ts,
@@ -50,7 +50,7 @@ WHERE t.tpep_pickup_datetime IS NOT NULL
   AND CAST(t.trip_distance AS double) > 0
   AND year(to_timestamp(t.tpep_pickup_datetime)) = 2024
 '''
-enrich_node1795178949086 = sparkSqlQuery(glueContext, query = SqlQuery0, mapping = {"zones":zones_node1795178857749, "trips":trips_csv_node1795178575346}, transformation_ctx = "enrich_node1795178949086")
+enrich_node1795178949086 = sparkSqlQuery(glueContext, query = SqlQuery123, mapping = {"zones":zones_node1795178857749, "trips":trips_csv_node1795178575346}, transformation_ctx = "enrich_node1795178949086")
 
 # Script generated for node dq_gate
 dq_gate_node1795179894676_ruleset = """

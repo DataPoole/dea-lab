@@ -3,7 +3,7 @@
 A serverless data pipeline on AWS that ingests, validates, catalogs and serves NYC taxi trip data.
 Built hands-on, one layer at a time, while preparing for the AWS Certified Data Engineer – Associate (DEA-C01) exam.
 
-**Status:** in progress · 6 of 16 builds complete · Region `us-east-1`
+**Status:** in progress · 7 of 16 builds complete · Region `us-east-1`
 
 ## Architecture
 
@@ -24,6 +24,8 @@ flowchart LR
   RS --> AT
   DB[(RDS MySQL)] -->|DMS full load + CDC| DM[(S3 raw/dms/)]
   DM --> AT
+  C -.->|S3 event| EB[EventBridge rule] --> SF[Step Functions<br/>retry + catch + SNS]
+  SF --> GJ
   C --> GJ[Glue ETL job<br/>join + DQ gate] --> E[(S3 curated/trips_enriched<br/>Parquet, partitioned)]
   E --> AT
   DM --> MG[Athena MERGE INTO] --> IC[(Iceberg zones_current)]
@@ -39,15 +41,16 @@ flowchart LR
 | 4 | [Real-Time Trip Streaming](builds/04-real-time-streaming/) | Kinesis, Firehose, Lambda | Events queryable as Parquet within a minute; bad records isolated |
 | 5 | [Database Change Capture](builds/05-database-cdc/) | RDS MySQL, DMS, VPC endpoint | Inserts, updates and deletes replicated to S3; survived a paused task |
 | 6 | [ETL with Data Quality Gates](builds/06-etl-data-quality/) | Glue ETL, Glue Data Quality, Athena, Iceberg | 578,642 trips cleaned and enriched behind a DQ gate; CDC merged into a current-state Iceberg table |
+| 7 | [Pipeline Orchestration](builds/07-pipeline-orchestration/) | Step Functions, EventBridge, Glue, Athena, SNS | One upload runs validate → ETL → row-count check → email, hands-free; failures retried, caught and alerted |
 
 **Coming next:**
-Orchestration (Step Functions) ·
-data warehouse (Redshift Serverless) · pipeline as code (SAM) · governance and PII (Lake Formation).
+Data warehouse (Redshift Serverless) · pipeline as code (SAM) · governance and PII (Lake Formation).
 
 ## Skills shown
 
 - **Data lake design:** zones, Hive-style partitions, storage tiering based on access patterns
 - **Event-driven pipelines:** S3 notifications, Lambda, async retries, failure destinations
+- **Orchestration:** Step Functions (Glue and Athena `.sync`, SDK integrations, Retry/Catch), EventBridge S3 event rules
 - **Streaming:** Kinesis Data Streams, Firehose format conversion, stream consumers, poison-record handling
 - **Database replication:** DMS full load + CDC, MySQL binlog setup, private networking with VPC endpoints, Secrets Manager
 - **ETL:** Glue Studio visual jobs, Spark SQL joins, job bookmarks, catalog updates from the job
